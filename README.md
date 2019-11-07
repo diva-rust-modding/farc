@@ -1,5 +1,4 @@
-# farchive
-
+# farchive [![Build Status](https://travis-ci.com/Waelwindows/farc.svg?branch=master)](https://travis-ci.com/Waelwindows/farc)
 A command line tool and library used to create/manipulate SEGA's File Archive format.
 
 ## Getting Started
