@@ -10,3 +10,16 @@ edition = "2018"
 nom = "5.0.1"
 flate2 = "1.0.12"
 enum_dispatch = { version = "*", git="https://gitlab.com/waelwindows9922/enum_dispatch.git" }
+
+[badges]
+
+# Appveyor: `repository` is required. `branch` is optional; default is `master`
+# `service` is optional; valid values are `github` (default), `bitbucket`, and
+# `gitlab`; `id` is optional; you can specify the appveyor project id if you
+# want to use that instead. `project_name` is optional; use when the repository
+# name differs from the appveyor project name.
+appveyor = { repository = "Waelwindows/farc", service = "github" }
+
+# Travis CI: `repository` in format "<user>/<project>" is required.
+# `branch` is optional; default is `master`
+travis-ci = { repository = "Waelwindows/farc", branch = "master" }
