@@ -9,4 +9,4 @@ edition = "2018"
 [dependencies]
 nom = "5.0.1"
 flate2 = "1.0.12"
-enum_dispatch = { version = "*", path="/home/waelwindows/rust/enum_dispatch" }
+enum_dispatch = { version = "*", git="https://gitlab.com/waelwindows9922/enum_dispatch.git" }
