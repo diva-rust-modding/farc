@@ -2,10 +2,11 @@ use enum_dispatch::*;
 
 use std::borrow::Cow;
 use std::io;
+use std::path::PathBuf;
 
-pub(crate) mod read;
 pub mod compress;
 pub mod encrypt;
+pub(crate) mod read;
 
 use self::compress::*;
 use self::encrypt::*;
@@ -18,6 +19,19 @@ use self::encrypt::*;
 pub struct MemoryEntry<'a> {
     pub name: Cow<'a, str>,
     pub data: Cow<'a, [u8]>,
+}
+
+#[derive(Debug, PartialEq)]
+///A file to be encoded as an entry
+pub struct FileEntry {
+    path: PathBuf,
+}
+
+#[enum_dispatch(Entry)]
+#[derive(Debug, PartialEq)]
+pub enum BaseEntry<'a> {
+    Memory(MemoryEntry<'a>),
+    File(FileEntry),
 }
 
 #[enum_dispatch]
@@ -34,5 +48,11 @@ pub trait EntryExtract<'a>: Entry {
 impl<'a> Entry for MemoryEntry<'a> {
     fn name(&self) -> &str {
         &self.name
+    }
+}
+
+impl Entry for FileEntry {
+    fn name(&self) -> &str {
+        self.path.file_name().unwrap().to_str().unwrap()
     }
 }

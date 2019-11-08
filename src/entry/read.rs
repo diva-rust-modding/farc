@@ -13,16 +13,20 @@ fn be_usize(i: &[u8]) -> IResult<&[u8], usize> {
 pub trait Descriptor<'a> {
     type Entry: Entry;
 
-    fn read(i: &'a [u8]) -> IResult<&'a [u8], Self> where Self: Sized;
+    fn read(i: &'a [u8]) -> IResult<&'a [u8], Self>
+    where
+        Self: Sized;
     fn into_entry(self, i: &'a [u8]) -> Self::Entry;
 }
 
+#[derive(Debug)]
 pub struct MemoryEntryDescriptor<'a> {
     pub name: Cow<'a, str>,
     pub pos: usize,
     pub len: usize,
 }
 
+#[derive(Debug)]
 pub struct CompressedEntryDescriptor<'a> {
     pub name: Cow<'a, str>,
     pub pos: usize,
@@ -40,7 +44,10 @@ impl<'a> Descriptor<'a> for MemoryEntryDescriptor<'a> {
         Ok((i, MemoryEntryDescriptor { name, pos, len }))
     }
     fn into_entry(self, i: &'a [u8]) -> Self::Entry {
-        MemoryEntry { name: self.name, data: i[self.pos..][..self.len].into() }
+        MemoryEntry {
+            name: self.name,
+            data: i[self.pos..][..self.len].into(),
+        }
     }
 }
 
@@ -52,13 +59,24 @@ impl<'a> Descriptor<'a> for CompressedEntryDescriptor<'a> {
         let (i, pos) = be_usize(i)?;
         let (i, len) = be_usize(i)?;
         let (i, original_len) = be_u32(i)?;
-        Ok((i, CompressedEntryDescriptor { name, pos, len, original_len }))
+        Ok((
+            i,
+            CompressedEntryDescriptor {
+                name,
+                pos,
+                len,
+                original_len,
+            },
+        ))
     }
     fn into_entry(self, i: &'a [u8]) -> Self::Entry {
-        CompressedEntry(
-            MemoryEntry { name: self.name, data: i[self.pos..][..self.len].into() },
-            self.original_len
-        )
+        CompressedEntry {
+            entry: MemoryEntry {
+                name: self.name,
+                data: i[self.pos..][..self.len].into(),
+            },
+            original_len: self.original_len,
+        }
     }
 }
 
@@ -87,6 +105,6 @@ mod tests {
         assert_eq!(desc.len, 3827);
         assert_eq!(desc.original_len, 21050);
         let entry = desc.into_entry(COMP);
-        assert_eq!(&entry.0.data[..4], &[0x1F, 0x8B, 8, 8]);
+        assert_eq!(&entry.entry.data[..4], &[0x1F, 0x8B, 8, 8]);
     }
 }
