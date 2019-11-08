@@ -1,8 +1,54 @@
 language: rust
 rust:
-  - stable
-  - beta
-  - nightly
+- stable
+- beta
+- nightly
+GH_TOKEN: 
+DEPLOY_TO_GITHUB:
+  before_deploy: &1
+  - git config --local user.name "Waelwindows"
+  - git config --local user.email "waelwindows@hotmail.com"
+  - name="farc-$TRAVIS_TAG-$TARGET"
+  - mkdir $name
+  - cp target/$TARGET/release/examples/farc $name/
+  - cp README.md LICENSE $name/
+  - tar czvf $name.tar.gz $name
+  deploy: &2
+    provider: releases
+  api_key:
+    secure: aZdWnbhkJa1I/CAydjlUKCzYt6mb1iY7WN/eZsyVszB3SRKhhx2v3hAmipl1e7aCklHzxprRFA0griRt/iBZaj2ty0ro2vMkMDZhQY6xiNy/AwPjreQ0HVcVuWUSKRBVYzPNdtWKz9bdkAqDQ93yPg2h22U7kFsc3E8N8LEzFBqjcqM6fnAEfryZDlK2aV2WDXX6xU4kk0jLFZgvM+PUdQxSH2IrfaVpOCZ/OTwW5sp1gHGpfhzluNlg1Kv2PSOraYg0NwbWD4cPhpzQdjDrHTSp2x4RchsParZcXqT+WelBA33fHzgm56kwH5uOU1CVCg92t06UU1bnq+UiWcXdSNKqdZw9cbEKmoZEa5ixAFnto9QWAspQ5WPbgqyxogcT5+agwS9fPmJ0QYGDOmE7WI7jOs6jq9tEquM0lCI13Vxg2HhzP+Fbq9yTS6B5AWaHFzEaQKQnS4Xh1UCGIgvcrcMTD/Or4vHSdgRY70S0dMW42JBbR7piWg2pJDJUiBJ/wggnTFS9FQVkRRz5DSGCaTVOmVPrAH4bjKXUWPNSQCzYhCes+OjbFczaU1v+mDJ2K19mJxGRbYJvMPL/Hjk0MvucldZDJ8l3e74HozMpgfKGfZkNxLfaqtHQcs/mBosIcBc10b7vR6c/POwkaOljqp45Rh9JJrvb2XOjCgKW71o=
+    file: farc-$TRAVIS_TAG-$TARGET.tar.gz
+    skip_cleanup: true
+    on:
+      tags: true
 matrix:
   allow_failures:
-    - rust: nightly
+  - rust: nightly
+  include:
+  - name: Linux Binary
+    env: TARGET=x86_64-unknown-linux-musl
+    rust: nightly
+    before_script: rustup target add $TARGET
+    script: cargo build --release --target $TARGET --example=farc
+    addons:
+      apt:
+        packages:
+        - musl-tools
+    before_deploy: *1
+    deploy: *2
+  - name: macOS Binary
+    env: MACOSX_DEPLOYMENT_TARGET=10.7 TARGET=x86_64-apple-darwin
+    os: osx
+    rust: nightly
+    script: cargo build --release --target $TARGET --example=farc
+    install: true
+    before_deploy: *1
+    deploy: *2
+
+    #deploy:
+    #  provider: releases
+    #  api_key:
+    #    secure: aZdWnbhkJa1I/CAydjlUKCzYt6mb1iY7WN/eZsyVszB3SRKhhx2v3hAmipl1e7aCklHzxprRFA0griRt/iBZaj2ty0ro2vMkMDZhQY6xiNy/AwPjreQ0HVcVuWUSKRBVYzPNdtWKz9bdkAqDQ93yPg2h22U7kFsc3E8N8LEzFBqjcqM6fnAEfryZDlK2aV2WDXX6xU4kk0jLFZgvM+PUdQxSH2IrfaVpOCZ/OTwW5sp1gHGpfhzluNlg1Kv2PSOraYg0NwbWD4cPhpzQdjDrHTSp2x4RchsParZcXqT+WelBA33fHzgm56kwH5uOU1CVCg92t06UU1bnq+UiWcXdSNKqdZw9cbEKmoZEa5ixAFnto9QWAspQ5WPbgqyxogcT5+agwS9fPmJ0QYGDOmE7WI7jOs6jq9tEquM0lCI13Vxg2HhzP+Fbq9yTS6B5AWaHFzEaQKQnS4Xh1UCGIgvcrcMTD/Or4vHSdgRY70S0dMW42JBbR7piWg2pJDJUiBJ/wggnTFS9FQVkRRz5DSGCaTVOmVPrAH4bjKXUWPNSQCzYhCes+OjbFczaU1v+mDJ2K19mJxGRbYJvMPL/Hjk0MvucldZDJ8l3e74HozMpgfKGfZkNxLfaqtHQcs/mBosIcBc10b7vR6c/POwkaOljqp45Rh9JJrvb2XOjCgKW71o=
+    #  file: ''
+    #  on:
+    #    repo: Waelwindows/farc

@@ -28,7 +28,6 @@ enum Opt {
 
 use std::fs::File;
 use std::io::Read;
-use farc::entry::*;
 
 fn main() {
     let opts = Opt::from_args();

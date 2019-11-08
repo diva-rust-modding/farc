@@ -35,20 +35,21 @@ os: Visual Studio 2015
 environment:
   matrix:
 
+#Prefer MSVC toolchain
 ### MSVC Toolchains ###
 
-  # Stable 64-bit MSVC
-    - channel: stable
-      target: x86_64-pc-windows-msvc
-  # Stable 32-bit MSVC
-    - channel: stable
-      target: i686-pc-windows-msvc
-  # Beta 64-bit MSVC
-    - channel: beta
-      target: x86_64-pc-windows-msvc
-  # Beta 32-bit MSVC
-    - channel: beta
-      target: i686-pc-windows-msvc
+          #  # Stable 64-bit MSVC
+          #    - channel: stable
+          #      target: x86_64-pc-windows-msvc
+          #  # Stable 32-bit MSVC
+          #    - channel: stable
+          #      target: i686-pc-windows-msvc
+          #  # Beta 64-bit MSVC
+          #    - channel: beta
+          #      target: x86_64-pc-windows-msvc
+          #  # Beta 32-bit MSVC
+          #    - channel: beta
+          #      target: i686-pc-windows-msvc
   # Nightly 64-bit MSVC
     - channel: nightly
       target: x86_64-pc-windows-msvc
@@ -57,29 +58,7 @@ environment:
     - channel: nightly
       target: i686-pc-windows-msvc
       #cargoflags: --features "unstable"
-
-### GNU Toolchains ###
-
-  # Stable 64-bit GNU
-    - channel: stable
-      target: x86_64-pc-windows-gnu
-  # Stable 32-bit GNU
-    - channel: stable
-      target: i686-pc-windows-gnu
-  # Beta 64-bit GNU
-    - channel: beta
-      target: x86_64-pc-windows-gnu
-  # Beta 32-bit GNU
-    - channel: beta
-      target: i686-pc-windows-gnu
-  # Nightly 64-bit GNU
-    - channel: nightly
-      target: x86_64-pc-windows-gnu
-      #cargoflags: --features "unstable"
-  # Nightly 32-bit GNU
-    - channel: nightly
-      target: i686-pc-windows-gnu
-      #cargoflags: --features "unstable"
+      
 ### Allowed failures ###
 
 # See Appveyor documentation for specific details. In short, place any channel or targets you wish
@@ -117,4 +96,32 @@ build: false
 #directly or perform other testing commands. Rust will automatically be placed in the PATH
 # environment variable.
 test_script:
-  - cargo test --verbose %cargoflags%
+  - cargo build --release --verbose %cargoflags% --example=farc
+
+
+# Start builds on tags only (GitHub, BitBucket, GitLab, Gitea)
+skip_non_tags: true
+
+before_deploy:
+  - ps: |
+        $NAME = "farc-${env:APPVEYOR_REPO_TAG_NAME}-${env:target}"
+        New-Item -Path $NAME -ItemType directory
+        Copy-Item "target/release/examples/farc.exe" "${NAME}/"
+        Copy-Item "target/release/examples/farc.exe" "farc-${env:APPVEYOR_REPO_TAG_NAME}-${env:target}.exe"
+        Copy-Item LICENSE "${NAME}/"
+        Copy-Item README.md "${NAME}/"
+        7z a -ttar "${NAME}.tar" "${NAME}"
+        7z a "${NAME}.tar.gz" "${NAME}.tar"
+        Push-AppveyorArtifact "${NAME}.tar.gz"
+        Push-AppveyorArtifact "farc-${env:APPVEYOR_REPO_TAG_NAME}-${env:target}.exe"
+
+deploy:
+  artifact: /.*\.tar.gz/, /.*\.exe/
+  description: 'Appveyor Automated Release'
+  provider: GitHub
+  draft: false
+  prerelease: false
+  auth_token:
+    secure: nRNMF+FbnpmsD2L5DyshVEJfdJzMrqyET/b0CQ5wSqxR8S/CVCM8Wc/P7uocIy8b
+  on:
+    appveyor_repo_tag: true

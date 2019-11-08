@@ -8,8 +8,8 @@ pub mod compress;
 pub mod encrypt;
 pub(crate) mod read;
 
-use self::compress::*;
-use self::encrypt::*;
+pub use self::compress::*;
+pub use self::encrypt::*;
 
 #[derive(Debug, PartialEq)]
 ///In-memory data stream

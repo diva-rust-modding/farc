@@ -2,5 +2,5 @@ pub mod entry;
 pub mod read;
 pub mod archive;
 
-use crate::entry::*;
-use crate::archive::*;
+pub use crate::entry::*;
+pub use crate::archive::*;
