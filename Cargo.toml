@@ -23,3 +23,6 @@ appveyor = { repository = "Waelwindows/farc", service = "github" }
 # Travis CI: `repository` in format "<user>/<project>" is required.
 # `branch` is optional; default is `master`
 travis-ci = { repository = "Waelwindows/farc", branch = "master" }
+
+[dev-dependencies]
+structopt = "0.3.3"
