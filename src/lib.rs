@@ -4,6 +4,11 @@ pub mod read;
 use crate::entry::compress::*;
 use crate::entry::*;
 
+pub enum  GenericArchive<'a> {
+    Base(BaseArchive<'a>),
+    Compress(CompressArchive<'a>),
+}
+
 #[derive(Debug, PartialEq)]
 pub struct BaseArchive<'a> {
     pub align: u32,

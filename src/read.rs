@@ -1,4 +1,4 @@
-use nom::{bytes::complete::*, combinator::*, multi::many1, number::complete::*, *};
+use nom::{bytes::complete::*, combinator::*, multi::many1, number::complete::*, branch::alt, *};
 
 use super::*;
 use crate::entry::read::*;
@@ -7,8 +7,17 @@ fn be_usize(i: &[u8]) -> IResult<&[u8], usize> {
     map(be_u32, |x| x as usize)(i)
 }
 
-impl<'a> BaseArchive<'a> {
-    pub fn read(i0: &'a [u8]) -> IResult<&'a [u8], Self> {
+impl GenericArchive<'_> {
+    pub fn read(i0: &[u8]) -> IResult<&[u8], GenericArchive> {
+        alt((
+            map(BaseArchive::read, |a| GenericArchive::Base(a)),
+            map(CompressArchive::read, |a| GenericArchive::Compress(a)),
+        ))(i0)
+    }
+}
+
+impl BaseArchive<'_> {
+    pub fn read(i0: &[u8]) -> IResult<&[u8], BaseArchive> {
         let (i, _) = tag("FArc")(i0)?;
         let (i, bs) = be_usize(i)?;
         let (i, align) = be_u32(i)?;
@@ -22,8 +31,8 @@ impl<'a> BaseArchive<'a> {
     }
 }
 
-impl<'a> CompressArchive<'a> {
-    pub fn read(i0: &'a [u8]) -> IResult<&'a [u8], Self> {
+impl CompressArchive<'_> {
+    pub fn read(i0: &[u8]) -> IResult<&[u8], CompressArchive> {
         let (i, _) = tag("FArC")(i0)?;
         let (i, bs) = be_usize(i)?;
         let (i, align) = be_u32(i)?;
