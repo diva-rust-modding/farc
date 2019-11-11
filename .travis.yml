@@ -15,15 +15,18 @@ DEPLOY_TO_GITHUB:
   - tar czvf $name.tar.gz $name
   deploy: &2
     provider: releases
-  api_key:
-    secure: aZdWnbhkJa1I/CAydjlUKCzYt6mb1iY7WN/eZsyVszB3SRKhhx2v3hAmipl1e7aCklHzxprRFA0griRt/iBZaj2ty0ro2vMkMDZhQY6xiNy/AwPjreQ0HVcVuWUSKRBVYzPNdtWKz9bdkAqDQ93yPg2h22U7kFsc3E8N8LEzFBqjcqM6fnAEfryZDlK2aV2WDXX6xU4kk0jLFZgvM+PUdQxSH2IrfaVpOCZ/OTwW5sp1gHGpfhzluNlg1Kv2PSOraYg0NwbWD4cPhpzQdjDrHTSp2x4RchsParZcXqT+WelBA33fHzgm56kwH5uOU1CVCg92t06UU1bnq+UiWcXdSNKqdZw9cbEKmoZEa5ixAFnto9QWAspQ5WPbgqyxogcT5+agwS9fPmJ0QYGDOmE7WI7jOs6jq9tEquM0lCI13Vxg2HhzP+Fbq9yTS6B5AWaHFzEaQKQnS4Xh1UCGIgvcrcMTD/Or4vHSdgRY70S0dMW42JBbR7piWg2pJDJUiBJ/wggnTFS9FQVkRRz5DSGCaTVOmVPrAH4bjKXUWPNSQCzYhCes+OjbFczaU1v+mDJ2K19mJxGRbYJvMPL/Hjk0MvucldZDJ8l3e74HozMpgfKGfZkNxLfaqtHQcs/mBosIcBc10b7vR6c/POwkaOljqp45Rh9JJrvb2XOjCgKW71o=
+    api_key:
+      secure: kmc9Xjy9T0Gvf6k60embsoxUs9ksfMl1UTNp99Ky7hSvoGYM/eFfg2Z1Kq6hBS+uSjAUdEtD0PwUOO1ZyAeMKqOdDnIBKqCvVTjitkRz0T1op0kuQ/s+qQnU+snw5EwKQ5S9UBB+pdGWlh9SBmCjPOAnigohKB8fJsqIgxWt/B6bPCKeahrdA7oMyQ9AAh4NFhnr21QJHRUUQqzpLFl8bKXexZQ45N6DZ7tRTugeMP7OLr8U6H/vXYE6rjM3sW+QkbLPQHh1swIR0naQLxPMyKrH/z1LH5CSSb700wLI6fw4HVTVv6fQgQJFyNypdY/MTNJQL0O4/s+bE+f6KbLjkLVN6AU9MjUyacfn3g9lqufofJJ8QBGm5P3yQhCJlJiZBn8B3bjvBuzxM1CEe3O+sxIktPwD5I9fB0aKEmBspo4L76XrYl8y4ov2YmVrtuaC6dpMJQFNj1n+jgUzOYR3ELrS9Q1fCDvYcMOhVNHiFxsqBt1ik7uWSu7k/AU6yLMdJh0oYOvnFUfRCPfttNjLCD5p9HYTVwZZytszT+jRQ5Bi482RCF9Cnpe3o1SXzgl2ss1RiVYfb/ZF+u34fgHAZUfXaylhUbFij2fdWJrKrZ1yJ7Vr4YALcyfGPwSH58dPe9eFc1PjCbVVLj8WffgEZmtxMFxvNXKckJ8uL9tUQbg=
     file: farc-$TRAVIS_TAG-$TARGET.tar.gz
     skip_cleanup: true
     on:
+      all_branches: true
       tags: true
 matrix:
   allow_failures:
   - rust: nightly
+  fast_finish: true
+  cache: cargo
   include:
   - name: Linux Binary
     env: TARGET=x86_64-unknown-linux-musl
@@ -44,11 +47,10 @@ matrix:
     install: true
     before_deploy: *1
     deploy: *2
-
     #deploy:
     #  provider: releases
     #  api_key:
-    #    secure: aZdWnbhkJa1I/CAydjlUKCzYt6mb1iY7WN/eZsyVszB3SRKhhx2v3hAmipl1e7aCklHzxprRFA0griRt/iBZaj2ty0ro2vMkMDZhQY6xiNy/AwPjreQ0HVcVuWUSKRBVYzPNdtWKz9bdkAqDQ93yPg2h22U7kFsc3E8N8LEzFBqjcqM6fnAEfryZDlK2aV2WDXX6xU4kk0jLFZgvM+PUdQxSH2IrfaVpOCZ/OTwW5sp1gHGpfhzluNlg1Kv2PSOraYg0NwbWD4cPhpzQdjDrHTSp2x4RchsParZcXqT+WelBA33fHzgm56kwH5uOU1CVCg92t06UU1bnq+UiWcXdSNKqdZw9cbEKmoZEa5ixAFnto9QWAspQ5WPbgqyxogcT5+agwS9fPmJ0QYGDOmE7WI7jOs6jq9tEquM0lCI13Vxg2HhzP+Fbq9yTS6B5AWaHFzEaQKQnS4Xh1UCGIgvcrcMTD/Or4vHSdgRY70S0dMW42JBbR7piWg2pJDJUiBJ/wggnTFS9FQVkRRz5DSGCaTVOmVPrAH4bjKXUWPNSQCzYhCes+OjbFczaU1v+mDJ2K19mJxGRbYJvMPL/Hjk0MvucldZDJ8l3e74HozMpgfKGfZkNxLfaqtHQcs/mBosIcBc10b7vR6c/POwkaOljqp45Rh9JJrvb2XOjCgKW71o=
+    #    secure: kmc9Xjy9T0Gvf6k60embsoxUs9ksfMl1UTNp99Ky7hSvoGYM/eFfg2Z1Kq6hBS+uSjAUdEtD0PwUOO1ZyAeMKqOdDnIBKqCvVTjitkRz0T1op0kuQ/s+qQnU+snw5EwKQ5S9UBB+pdGWlh9SBmCjPOAnigohKB8fJsqIgxWt/B6bPCKeahrdA7oMyQ9AAh4NFhnr21QJHRUUQqzpLFl8bKXexZQ45N6DZ7tRTugeMP7OLr8U6H/vXYE6rjM3sW+QkbLPQHh1swIR0naQLxPMyKrH/z1LH5CSSb700wLI6fw4HVTVv6fQgQJFyNypdY/MTNJQL0O4/s+bE+f6KbLjkLVN6AU9MjUyacfn3g9lqufofJJ8QBGm5P3yQhCJlJiZBn8B3bjvBuzxM1CEe3O+sxIktPwD5I9fB0aKEmBspo4L76XrYl8y4ov2YmVrtuaC6dpMJQFNj1n+jgUzOYR3ELrS9Q1fCDvYcMOhVNHiFxsqBt1ik7uWSu7k/AU6yLMdJh0oYOvnFUfRCPfttNjLCD5p9HYTVwZZytszT+jRQ5Bi482RCF9Cnpe3o1SXzgl2ss1RiVYfb/ZF+u34fgHAZUfXaylhUbFij2fdWJrKrZ1yJ7Vr4YALcyfGPwSH58dPe9eFc1PjCbVVLj8WffgEZmtxMFxvNXKckJ8uL9tUQbg=
     #  file: ''
     #  on:
     #    repo: Waelwindows/farc
