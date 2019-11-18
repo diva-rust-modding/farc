@@ -16,29 +16,26 @@ impl GenericArchive<'_> {
     }
 }
 
-impl<'a> BaseArchive<'a> {
-    pub fn read(i0: &'a [u8]) -> IResult<&'a [u8], Self> {
-        let (i, _) = tag("FArc")(i0)?;
+impl<'a, E: BasicEntry<'a>> BasicArchive<E> {
+    fn read_magic(i0: &'a [u8], magic: &'static str) -> IResult<&'a [u8], Self> {
+        let (i, _) = tag(magic)(i0)?;
         let (i, bs) = be_usize(i)?;
         let (i, align) = be_u32(i)?;
         //panic!("{} {} {}", bs, align, bs-0xC);
-        let entry_read = |i: &'a [u8]| MemoryEntry::read(i0, i);
+        let entry_read = |i: &'a [u8]| E::read(i0, i);
         let (_, entries) = many1(entry_read)(&i0[0xC..][..bs-4])?;
-        let entries = entries.into_iter().map(|e| BaseEntry::Memory(e)).collect();
-        Ok((i, BaseArchive { align, entries }))
+        let entries = entries.into_iter().map(|e| e.into()).collect();
+        Ok((i, BasicArchive { align, entries }))
     }
 }
-
+impl<'a> BaseArchive<'a> {
+    pub fn read(i0: &'a [u8]) -> IResult<&'a [u8], Self> {
+        Self::read_magic(i0, "FArc")
+    }
+}
 impl<'a> CompressArchive<'a> {
     pub fn read(i0: &'a [u8]) -> IResult<&'a [u8], Self> {
-        let (i, _) = tag("FArC")(i0)?;
-        let (i, bs) = be_usize(i)?;
-        let (i, align) = be_u32(i)?;
-        //panic!("{} {} {}", bs, align, bs-0xC);
-        let entry_read = |i: &'a [u8]| CompressedEntry::read(i0, i);
-        let (_, entries) = many1(entry_read)(&i0[0xC..][..bs-4])?;
-        let entries = entries.into_iter().map(|e| CompressEntry::Compressed(e)).collect();
-        Ok((i, CompressArchive { align, entries }))
+        Self::read_magic(i0, "FArC")
     }
 }
 

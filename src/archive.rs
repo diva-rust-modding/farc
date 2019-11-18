@@ -6,14 +6,11 @@ pub enum  GenericArchive<'a> {
     Compress(CompressArchive<'a>),
 }
 
-#[derive(Debug, PartialEq)]
-pub struct BaseArchive<'a> {
-    pub align: u32,
-    pub entries: Vec<BaseEntry<'a>>,
-}
+pub type BaseArchive<'a> = BasicArchive<BaseEntry<'a>>;
+pub type CompressArchive<'a> = BasicArchive<CompressEntry<'a>>;
 
 #[derive(Debug, PartialEq)]
-pub struct CompressArchive<'a> {
+pub struct BasicArchive<E> {
     pub align: u32,
-    pub entries: Vec<CompressEntry<'a>>,
+    pub entries: Vec<E>,
 }

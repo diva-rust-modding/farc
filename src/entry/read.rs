@@ -10,7 +10,8 @@ fn be_usize(i: &[u8]) -> IResult<&[u8], usize> {
     map(be_u32, |x| x as usize)(i)
 }
 
-pub(crate) trait BasicEntry<'a> : Entry + Sized {
+#[enum_dispatch]
+pub trait BasicEntry<'a> : Entry + Sized {
     fn read(i0: &'a [u8], i:&'a [u8]) -> IResult<&'a [u8], Self>;
 }
 
@@ -24,11 +25,29 @@ impl<'a> BasicEntry<'a> for MemoryEntry<'a> {
     }
 }
 
+//Should be obselete once `enum_dispatch` supports multiple traits
+//See: https://gitlab.com/antonok/enum_dispatch/issues/3
+impl<'a> BasicEntry<'a> for BaseEntry<'a> {
+    fn read(i0: &'a [u8], i:&'a [u8]) -> IResult<&'a [u8], Self> {
+        let (i, entry) = MemoryEntry::read(i0, &i)?;
+        Ok((i, entry.into()))
+    }
+}
+
 impl<'a> BasicEntry<'a> for CompressedEntry<'a> {
     fn read(i0: &'a [u8], i:&'a [u8]) -> IResult<&'a [u8], Self> {
         let (i, entry) = MemoryEntry::read(i0, &i)?;
         let (i, original_len) = be_u32(i)?;
         Ok((i, CompressedEntry { entry, original_len }))
+    }
+}
+
+//Should be obselete once `enum_dispatch` supports multiple traits
+//See: https://gitlab.com/antonok/enum_dispatch/issues/3
+impl<'a> BasicEntry<'a> for CompressEntry<'a> {
+    fn read(i0: &'a [u8], i:&'a [u8]) -> IResult<&'a [u8], Self> {
+        let (i, entry) = CompressedEntry::read(i0, &i)?;
+        Ok((i, entry.into()))
     }
 }
 
