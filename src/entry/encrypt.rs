@@ -7,7 +7,7 @@ pub enum Encryptor<E: Encrypt> {
 }
 
 pub trait Encrypt: Entry {
-    type Decrypt;
+    type Decrypt: Entry;
 
     fn encrypt(self) -> Encryptor<Self>
     where
@@ -19,6 +19,9 @@ pub trait Encrypt: Entry {
 
 impl<'a> Encrypt for MemoryEntry<'a> {
     type Decrypt = Self;
+}
+impl<'a> Encrypt for BaseEntry<'a> {
+    type Decrypt = MemoryEntry<'a>;
 }
 impl<'a> Encrypt for CompressEntry<'a> {
     type Decrypt = CompressedEntry<'a>;
