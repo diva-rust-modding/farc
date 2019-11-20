@@ -56,3 +56,23 @@ impl Entry for FileEntry {
         self.path.file_name().unwrap().to_str().unwrap()
     }
 }
+
+impl<'a> EntryExtract<'a> for MemoryEntry<'a> {
+    type Extractor = &'a [u8];
+
+    fn extractor(&self) -> &[u8] {
+        &self.data
+    }
+}
+
+impl<'a> EntryExtract<'a> for BaseEntry<'a> {
+    type Extractor = &'a [u8];
+
+    fn extractor(&self) -> &[u8] {
+        match self {
+            BaseEntry::Memory(e) => e.extractor(),
+            //Other entries shouldn't be extracted
+            _ => &[]
+        }
+    }
+}
