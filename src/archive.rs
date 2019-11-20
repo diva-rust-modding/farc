@@ -14,3 +14,14 @@ pub struct BasicArchive<E> {
     pub align: u32,
     pub entries: Vec<E>,
 }
+
+#[derive(Debug, PartialEq)]
+pub enum ExtendedArchives<'a> {
+    Base(ExtendArchive<BaseEntry<'a>>),
+    Compress(ExtendArchive<CompressEntry<'a>>),
+    Encrypt(ExtendArchive<Encryptor<BaseEntry<'a>>>),
+    CompressEncrypt(ExtendArchive<Encryptor<CompressEntry<'a>>>),
+}
+
+#[derive(Debug, PartialEq)]
+pub struct ExtendArchive<E: Entry>(pub BasicArchive<E>);

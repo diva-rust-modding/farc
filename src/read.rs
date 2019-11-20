@@ -38,6 +38,31 @@ impl<'a> CompressArchive<'a> {
         Self::read_magic(i0, "FArC")
     }
 }
+impl<'a, E: ExtendEntry<'a>> ExtendArchive<E> {
+    pub fn read(i0: &'a [u8]) -> IResult<&'a [u8], Self> {
+        let (i, _) = tag("FARC")(i0)?;
+        let (i, bs) = be_usize(i)?;
+        let (i, mode) = be_usize(i)?;
+        //skip 4 bytes
+        let i = &i[4..];
+        let (i, align) = be_u32(i)?;
+        //panic!("{} {} {}", bs, align, bs-0xC);
+        let entry_read = |i: &'a [u8]| E::read(i0, i);
+        let (_, entries) = many1(entry_read)(&i0[0xC..][..bs-20])?;
+        let entries = entries.into_iter().map(|e| e.into()).collect();
+        Ok((i, ExtendArchive(BasicArchive { align, entries })))
+    }
+}
+impl<'a> ExtendedArchives<'a> {
+    pub fn read(i0: &'a [u8]) -> IResult<&'a [u8], Self> {
+        alt((
+            map(ExtendArchive::read, |a| ExtendedArchives::Base(a)),
+            map(ExtendArchive::read, |a| ExtendedArchives::Compress(a)),
+            map(ExtendArchive::read, |a| ExtendedArchives::Encrypt(a)),
+            map(ExtendArchive::read, |a| ExtendedArchives::CompressEncrypt(a)),
+        ))(i0)
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -45,6 +70,7 @@ mod tests {
 
     const INPUT: &[u8] = include_bytes!("../assets/robmot_PV626.farc");
     const COMP: &[u8] = include_bytes!("../assets/gm_module_tbl.farc");
+    const FARC: &[u8] = include_bytes!("../assets/pv_721_common.farc");
 
     #[test]
     fn read_base() {
@@ -67,5 +93,9 @@ mod tests {
         }
         .into();
         assert_eq!(entry, farc.entries[0]);
+    }
+    #[test]
+    fn read_extended() {
+        let (_, farc) = ExtendedArchives::read(FARC).unwrap();
     }
 }

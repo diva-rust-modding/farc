@@ -11,11 +11,16 @@ fn be_usize(i: &[u8]) -> IResult<&[u8], usize> {
 }
 
 #[enum_dispatch]
-pub trait BasicEntry<'a> : Entry + Sized {
+pub trait ReadEntry<'a> : Entry + Sized {
     fn read(i0: &'a [u8], i:&'a [u8]) -> IResult<&'a [u8], Self>;
 }
 
-impl<'a> BasicEntry<'a> for MemoryEntry<'a> {
+pub trait BasicEntry<'a>: ReadEntry<'a> {}
+pub trait ExtendEntry<'a>: ReadEntry<'a> {}
+
+impl<'a, B: BasicEntry<'a>> ExtendEntry<'a> for B {}
+
+impl<'a> ReadEntry<'a> for MemoryEntry<'a> {
     fn read(i0: &'a [u8], i:&'a [u8]) -> IResult<&'a [u8], Self> {
         let (i, name) = string(i)?;
         let (i, pos) = be_usize(i)?;
@@ -27,14 +32,14 @@ impl<'a> BasicEntry<'a> for MemoryEntry<'a> {
 
 //Should be obselete once `enum_dispatch` supports multiple traits
 //See: https://gitlab.com/antonok/enum_dispatch/issues/3
-impl<'a> BasicEntry<'a> for BaseEntry<'a> {
+impl<'a> ReadEntry<'a> for BaseEntry<'a> {
     fn read(i0: &'a [u8], i:&'a [u8]) -> IResult<&'a [u8], Self> {
         let (i, entry) = MemoryEntry::read(i0, &i)?;
         Ok((i, entry.into()))
     }
 }
 
-impl<'a> BasicEntry<'a> for CompressedEntry<'a> {
+impl<'a> ReadEntry<'a> for CompressedEntry<'a> {
     fn read(i0: &'a [u8], i:&'a [u8]) -> IResult<&'a [u8], Self> {
         let (i, entry) = MemoryEntry::read(i0, &i)?;
         let (i, original_len) = be_u32(i)?;
@@ -44,12 +49,26 @@ impl<'a> BasicEntry<'a> for CompressedEntry<'a> {
 
 //Should be obselete once `enum_dispatch` supports multiple traits
 //See: https://gitlab.com/antonok/enum_dispatch/issues/3
-impl<'a> BasicEntry<'a> for CompressEntry<'a> {
+impl<'a> ReadEntry<'a> for CompressEntry<'a> {
     fn read(i0: &'a [u8], i:&'a [u8]) -> IResult<&'a [u8], Self> {
         let (i, entry) = CompressedEntry::read(i0, &i)?;
         Ok((i, entry.into()))
     }
 }
+
+impl<'a, E: ReadEntry<'a> + Encrypt> ReadEntry<'a> for Encryptor<E> {
+    fn read(i0: &'a [u8], i:&'a [u8]) -> IResult<&'a [u8], Self> {
+        let (i, entry) = E::read(i0, &i)?;
+        Ok((i, entry.encrypt()))
+    }
+}
+
+impl<'a> BasicEntry<'a> for MemoryEntry<'a> {}
+impl<'a> BasicEntry<'a> for BaseEntry<'a> {}
+impl<'a> BasicEntry<'a> for CompressedEntry<'a> {}
+impl<'a> BasicEntry<'a> for CompressEntry<'a> {}
+
+impl<'a, E: ReadEntry<'a> + Encrypt> ExtendEntry<'a> for Encryptor<E> {}
 
 #[cfg(test)]
 mod tests {

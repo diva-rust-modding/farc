@@ -17,6 +17,15 @@ pub trait Encrypt: Entry {
     }
 }
 
+impl<E: Encrypt> Entry for Encryptor<E> {
+    fn name(&self) -> &str {
+        match self {
+            Encryptor::Encrypt(e) => e.name(),
+            Encryptor::Encrypted(e) => e.name(),
+        }
+    }
+}
+
 impl<'a> Encrypt for MemoryEntry<'a> {
     type Decrypt = Self;
 }
