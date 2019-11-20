@@ -1,10 +1,10 @@
-use nom::{bytes::complete::*, combinator::*, number::complete::*, *};
+use nom::{bytes::complete::*, combinator::*, number::complete::*, error::context, *};
 use std::borrow::Cow;
 
 use super::*;
 
 fn string(i: &[u8]) -> IResult<&[u8], Cow<str>> {
-    is_not("\x00")(i).map(|(i2, s)| (&i2[1..], String::from_utf8_lossy(s)))
+    context("string: failed to read ASCII string", is_not("\x00"))(i).map(|(i2, s)| (&i2[1..], String::from_utf8_lossy(s)))
 }
 fn be_usize(i: &[u8]) -> IResult<&[u8], usize> {
     map(be_u32, |x| x as usize)(i)
@@ -16,9 +16,9 @@ pub trait ReadEntry<'a> : Entry + Sized {
 }
 
 pub trait BasicEntry<'a>: ReadEntry<'a> {}
-pub trait ExtendEntry<'a>: ReadEntry<'a> {}
-
-impl<'a, B: BasicEntry<'a>> ExtendEntry<'a> for B {}
+pub trait ExtendEntry<'a>: ReadEntry<'a> {
+    const Mode: u32;
+}
 
 impl<'a> ReadEntry<'a> for MemoryEntry<'a> {
     fn read(i0: &'a [u8], i:&'a [u8]) -> IResult<&'a [u8], Self> {
@@ -68,7 +68,21 @@ impl<'a> BasicEntry<'a> for BaseEntry<'a> {}
 impl<'a> BasicEntry<'a> for CompressedEntry<'a> {}
 impl<'a> BasicEntry<'a> for CompressEntry<'a> {}
 
-impl<'a, E: ReadEntry<'a> + Encrypt> ExtendEntry<'a> for Encryptor<E> {}
+impl<'a> ExtendEntry<'a> for MemoryEntry<'a> {
+    const Mode: u32 = 0;
+}
+impl<'a> ExtendEntry<'a> for BaseEntry<'a> {
+    const Mode: u32 = 0;
+}
+impl<'a> ExtendEntry<'a> for CompressedEntry<'a> {
+    const Mode: u32 = 2;
+}
+impl<'a> ExtendEntry<'a> for CompressEntry<'a> {
+    const Mode: u32 = 2;
+}
+impl<'a, E: ExtendEntry<'a> + Encrypt> ExtendEntry<'a> for Encryptor<E> {
+    const Mode: u32 = E::Mode | 4;
+}
 
 #[cfg(test)]
 mod tests {

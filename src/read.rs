@@ -1,4 +1,4 @@
-use nom::{bytes::complete::*, combinator::*, multi::many1, number::complete::*, branch::alt, *};
+use nom::{bytes::complete::*, combinator::*, multi::many1, number::complete::*, branch::alt, error::context, *};
 
 use super::*;
 use crate::entry::read::*;
@@ -42,13 +42,13 @@ impl<'a, E: ExtendEntry<'a>> ExtendArchive<E> {
     pub fn read(i0: &'a [u8]) -> IResult<&'a [u8], Self> {
         let (i, _) = tag("FARC")(i0)?;
         let (i, bs) = be_usize(i)?;
-        let (i, mode) = be_usize(i)?;
+        let (i, _) = context("Invalid FARC mode", map_opt(be_u32, |m| if E::Mode == m { Some(true) } else { None }))(i)?;
         //skip 4 bytes
         let i = &i[4..];
         let (i, align) = be_u32(i)?;
         //panic!("{} {} {}", bs, align, bs-0xC);
         let entry_read = |i: &'a [u8]| E::read(i0, i);
-        let (_, entries) = many1(entry_read)(&i0[0xC..][..bs-20])?;
+        let (_, entries) = many1(entry_read)(&i0[0x1C..][..bs-20])?;
         let entries = entries.into_iter().map(|e| e.into()).collect();
         Ok((i, ExtendArchive(BasicArchive { align, entries })))
     }
@@ -67,6 +67,7 @@ impl<'a> ExtendedArchives<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use nom::dbg_dmp;
 
     const INPUT: &[u8] = include_bytes!("../assets/robmot_PV626.farc");
     const COMP: &[u8] = include_bytes!("../assets/gm_module_tbl.farc");
@@ -95,7 +96,20 @@ mod tests {
         assert_eq!(entry, farc.entries[0]);
     }
     #[test]
-    fn read_extended() {
-        let (_, farc) = ExtendedArchives::read(FARC).unwrap();
+    fn read_extended_encrypt_compres() {
+        let (_, farc) = ExtendArchive::<Encryptor<CompressEntry<'_>>>::read(FARC).unwrap();
+        for entry in &farc.0.entries {
+            println!("{}", &entry.name());
+        }
+        //pv_721_mouth.dsc
+        //pv_721_scene.dsc
+        //pv_721_success_mouth.dsc
+        //pv_721_success_scene.dsc
+        //pv_721_system.dsc
+        assert_eq!(farc.0.entries[0].name(), "pv_721_mouth.dsc");
+        assert_eq!(farc.0.entries[1].name(), "pv_721_scene.dsc");
+        assert_eq!(farc.0.entries[2].name(), "pv_721_success_mouth.dsc");
+        assert_eq!(farc.0.entries[3].name(), "pv_721_success_scene.dsc");
+        assert_eq!(farc.0.entries[4].name(), "pv_721_system.dsc");
     }
 }
