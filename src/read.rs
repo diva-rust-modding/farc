@@ -10,8 +10,9 @@ fn be_usize(i: &[u8]) -> IResult<&[u8], usize> {
 impl GenericArchive<'_> {
     pub fn read(i0: &[u8]) -> IResult<&[u8], GenericArchive> {
         alt((
-            map(BaseArchive::read, |a| GenericArchive::Base(a)),
-            map(CompressArchive::read, |a| GenericArchive::Compress(a)),
+            map(BaseArchive::read, GenericArchive::Base),
+            map(CompressArchive::read, GenericArchive::Compress),
+            map(ExtendedArchives::read, GenericArchive::Extended),
         ))(i0)
     }
 }
@@ -46,6 +47,7 @@ impl<'a, E: ExtendEntry<'a>> ExtendArchive<E> {
         //skip 4 bytes
         let i = &i[4..];
         let (i, align) = be_u32(i)?;
+        let (i, _) = context("Future FARC detected", map_opt(be_u32, |m| if 0 == m { Some(true) } else { None }))(i)?;
         //panic!("{} {} {}", bs, align, bs-0xC);
         let entry_read = |i: &'a [u8]| E::read(i0, i);
         let (_, entries) = many1(entry_read)(&i0[0x1C..][..bs-20])?;
@@ -56,10 +58,10 @@ impl<'a, E: ExtendEntry<'a>> ExtendArchive<E> {
 impl<'a> ExtendedArchives<'a> {
     pub fn read(i0: &'a [u8]) -> IResult<&'a [u8], Self> {
         alt((
-            map(ExtendArchive::read, |a| ExtendedArchives::Base(a)),
-            map(ExtendArchive::read, |a| ExtendedArchives::Compress(a)),
-            map(ExtendArchive::read, |a| ExtendedArchives::Encrypt(a)),
-            map(ExtendArchive::read, |a| ExtendedArchives::CompressEncrypt(a)),
+            map(ExtendArchive::read, ExtendedArchives::Base),
+            map(ExtendArchive::read, ExtendedArchives::Compress),
+            map(ExtendArchive::read, ExtendedArchives::Encrypt),
+            map(ExtendArchive::read, ExtendedArchives::CompressEncrypt),
         ))(i0)
     }
 }

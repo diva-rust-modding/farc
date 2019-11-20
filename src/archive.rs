@@ -4,6 +4,7 @@ use crate::entry::*;
 pub enum  GenericArchive<'a> {
     Base(BaseArchive<'a>),
     Compress(CompressArchive<'a>),
+    Extended(ExtendedArchives<'a>),
 }
 
 pub type BaseArchive<'a> = BasicArchive<BaseEntry<'a>>;
