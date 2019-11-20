@@ -47,9 +47,18 @@ fn main() {
                 GenericArchive::Base(a) => extract(&root_dir, &a.entries),
                 GenericArchive::Compress(a) => extract(&root_dir, &a.entries),
                 GenericArchive::Extended(a) => {
+                    use ExtendedArchives::*;
                     match a {
-                        ExtendedArchives::Base(a) => extract(&root_dir, &a.0.entries),
-                        ExtendedArchives::Compress(a) => extract(&root_dir, &a.0.entries),
+                        Base(a) => extract(&root_dir, &a.0.entries),
+                        Compress(a) => extract(&root_dir, &a.0.entries),
+                        _ => unimplemented!("Extracting encrypted archives is not yet supported")
+                    }
+                },
+                GenericArchive::Future(a) => {
+                    use FutureArchives::*;
+                    match a {
+                        Base(a) => extract(&root_dir, &a.0.entries),
+                        Compress(a) => extract(&root_dir, &a.0.entries),
                         _ => unimplemented!("Extracting encrypted archives is not yet supported")
                     }
                 }
