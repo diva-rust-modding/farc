@@ -11,7 +11,7 @@ pub struct CompressedEntry<'a> {
 
 #[enum_dispatch(Entry)]
 #[derive(Debug, PartialEq)]
-pub enum CompressEntry<'a> {
+pub enum Compressor<'a> {
     Compress(BaseEntry<'a>),
     Compressed(CompressedEntry<'a>),
 }

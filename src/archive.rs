@@ -8,7 +8,7 @@ pub enum  GenericArchive<'a> {
 }
 
 pub type BaseArchive<'a> = BasicArchive<BaseEntry<'a>>;
-pub type CompressArchive<'a> = BasicArchive<CompressEntry<'a>>;
+pub type CompressArchive<'a> = BasicArchive<Compressor<'a>>;
 
 #[derive(Debug, PartialEq)]
 pub struct BasicArchive<E> {
@@ -19,9 +19,9 @@ pub struct BasicArchive<E> {
 #[derive(Debug, PartialEq)]
 pub enum ExtendedArchives<'a> {
     Base(ExtendArchive<BaseEntry<'a>>),
-    Compress(ExtendArchive<CompressEntry<'a>>),
+    Compress(ExtendArchive<Compressor<'a>>),
     Encrypt(ExtendArchive<Encryptor<BaseEntry<'a>>>),
-    CompressEncrypt(ExtendArchive<Encryptor<CompressEntry<'a>>>),
+    CompressEncrypt(ExtendArchive<Encryptor<Compressor<'a>>>),
 }
 
 #[derive(Debug, PartialEq)]

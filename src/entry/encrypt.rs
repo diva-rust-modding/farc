@@ -32,6 +32,6 @@ impl<'a> Encrypt for MemoryEntry<'a> {
 impl<'a> Encrypt for BaseEntry<'a> {
     type Decrypt = MemoryEntry<'a>;
 }
-impl<'a> Encrypt for CompressEntry<'a> {
+impl<'a> Encrypt for Compressor<'a> {
     type Decrypt = CompressedEntry<'a>;
 }

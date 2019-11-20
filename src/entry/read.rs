@@ -49,7 +49,7 @@ impl<'a> ReadEntry<'a> for CompressedEntry<'a> {
 
 //Should be obselete once `enum_dispatch` supports multiple traits
 //See: https://gitlab.com/antonok/enum_dispatch/issues/3
-impl<'a> ReadEntry<'a> for CompressEntry<'a> {
+impl<'a> ReadEntry<'a> for Compressor<'a> {
     fn read(i0: &'a [u8], i:&'a [u8]) -> IResult<&'a [u8], Self> {
         let (i, entry) = CompressedEntry::read(i0, &i)?;
         Ok((i, entry.into()))
@@ -66,7 +66,7 @@ impl<'a, E: ReadEntry<'a> + Encrypt> ReadEntry<'a> for Encryptor<E> {
 impl<'a> BasicEntry<'a> for MemoryEntry<'a> {}
 impl<'a> BasicEntry<'a> for BaseEntry<'a> {}
 impl<'a> BasicEntry<'a> for CompressedEntry<'a> {}
-impl<'a> BasicEntry<'a> for CompressEntry<'a> {}
+impl<'a> BasicEntry<'a> for Compressor<'a> {}
 
 impl<'a> ExtendEntry<'a> for MemoryEntry<'a> {
     const Mode: u32 = 0;
@@ -77,7 +77,7 @@ impl<'a> ExtendEntry<'a> for BaseEntry<'a> {
 impl<'a> ExtendEntry<'a> for CompressedEntry<'a> {
     const Mode: u32 = 2;
 }
-impl<'a> ExtendEntry<'a> for CompressEntry<'a> {
+impl<'a> ExtendEntry<'a> for Compressor<'a> {
     const Mode: u32 = 2;
 }
 impl<'a, E: ExtendEntry<'a> + Encrypt> ExtendEntry<'a> for Encryptor<E> {

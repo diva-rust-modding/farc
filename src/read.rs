@@ -87,7 +87,7 @@ mod tests {
     #[test]
     fn read_compressed() {
         let (_, farc) = CompressArchive::read(COMP).unwrap();
-        let entry: CompressEntry = CompressedEntry {
+        let entry: Compressor = CompressedEntry {
             entry: MemoryEntry {
                 name: "gm_module_id.bin".into(),
                 data: COMP[41..][..3827].into(),
@@ -99,7 +99,7 @@ mod tests {
     }
     #[test]
     fn read_extended_encrypt_compres() {
-        let (_, farc) = ExtendArchive::<Encryptor<CompressEntry<'_>>>::read(FARC).unwrap();
+        let (_, farc) = ExtendArchive::<Encryptor<Compressor<'_>>>::read(FARC).unwrap();
         for entry in &farc.0.entries {
             println!("{}", &entry.name());
         }
