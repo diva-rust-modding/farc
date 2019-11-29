@@ -1,6 +1,5 @@
 use flate2::read::GzDecoder;
 
-
 use enum_dispatch::*;
 
 use super::*;

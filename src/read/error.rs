@@ -1,8 +1,6 @@
 use nom::error::{ErrorKind, ParseError};
 use thiserror::*;
 
-
-
 #[derive(Error, Debug)]
 #[error("A parser error has occured: {1}")]
 pub struct ParserError<'a>(pub &'a [u8], pub ParserErrorKind<'a>);
@@ -13,8 +11,10 @@ pub enum ParserErrorKind<'a> {
     InvalidOffset,
     #[error("Invalid magic expected farc, found {0:?}")]
     InvalidMagic(&'a str),
-    #[error("Invalid mode, most likely corrupted archive or encrypted future tone archive")]
-    InvalidMode,
+    #[error("Invalid mode, expected {expected} found {found}.\nMost likely corrupted archive or encrypted future tone archive")]
+    InvalidMode { expected: u32, found: u32 },
+    #[error("Invalid version detected, expected {expected} found {found}.\nMost likely found future tone archive while expecting extended and vice versa")]
+    InvalidVersion { expected: u32, found: u32 },
     #[error("String overflew, couldn't find null byte")]
     StringOverflow,
     #[error("{0:?}")]

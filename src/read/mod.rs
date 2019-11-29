@@ -1,6 +1,6 @@
 use nom::{
-    branch::alt, bytes::complete::*, combinator::*, error::context, multi::many1, sequence::pair,
-    number::complete::*, *,
+    branch::alt, bytes::complete::*, combinator::*, error::context, multi::many1,
+    number::complete::*, sequence::pair, *,
 };
 
 use self::error::*;
@@ -9,9 +9,9 @@ use crate::entry::read::*;
 
 use std::borrow::Cow;
 
+pub mod error;
 #[cfg(test)]
 mod tests;
-pub mod error;
 pub(crate) mod utilities;
 
 use self::utilities::*;
@@ -52,10 +52,16 @@ impl<'a, E: ExtendEntry<'a>> ExtendArchive<E> {
     pub fn read(i0: &'a [u8]) -> Result<'a, Self> {
         let (i, _) = tag("FARC")(i0)?;
         let (i, bs) = be_usize(i)?;
-        let (i, _) = context(
-            "Invalid FARC mode",
-            map_opt(be_u32, |m| if E::MODE == m { Some(true) } else { None }),
-        )(i)?;
+        let (i, mode) = be_u32(i)?;
+        if mode != E::MODE {
+            return Err(Err::Error(ParserError(
+                i,
+                ParserErrorKind::InvalidMode {
+                    expected: E::MODE,
+                    found: mode,
+                },
+            )));
+        }
         //skip 4 bytes
         let i = &i[4..];
         let (i, align) = be_u32(i)?;
@@ -83,10 +89,16 @@ impl<'a, E: ExtendEntry<'a>> FutureArchive<E> {
     pub fn read(i0: &'a [u8]) -> Result<'a, Self> {
         let (i, _) = tag("FARC")(i0)?;
         let (i, bs) = be_usize(i)?;
-        let (i, _) = context(
-            "Invalid FARC mode",
-            map_opt(be_u32, |m| if E::MODE == m { Some(true) } else { None }),
-        )(i)?;
+        let (i, mode) = be_u32(i)?;
+        if mode != E::MODE {
+            return Err(Err::Error(ParserError(
+                i,
+                ParserErrorKind::InvalidMode {
+                    expected: E::MODE,
+                    found: mode,
+                },
+            )));
+        }
         //skip 4 bytes
         let i = &i[4..];
         let (i, align) = be_u32(i)?;

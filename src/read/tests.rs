@@ -47,8 +47,7 @@ fn read_extended_encrypt_compres() {
 }
 #[test]
 fn read_future_compressed() {
-    let (_, farc) =
-        dbg_dmp(FutureArchive::<CompressedEntry<'_>>::read, "future")(FUTURE).unwrap();
+    let (_, farc) = dbg_dmp(FutureArchive::<CompressedEntry<'_>>::read, "future")(FUTURE).unwrap();
     for entry in &farc.0.entries {
         println!("{} {:#X}", entry.name(), entry.original_len);
     }

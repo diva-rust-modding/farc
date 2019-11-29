@@ -18,7 +18,7 @@ impl<'a> ReadEntry<'a> for MemoryEntry<'a> {
         let (i, name) = string(i)?;
         let (i, pos) = be_usize(i)?;
         let (i, len) = be_usize(i)?;
-        let data = slice_input(i0, pos..pos+len)?.into();
+        let data = slice_input(i0, pos..pos + len)?.into();
         Ok((i, MemoryEntry { name, data }))
     }
 }

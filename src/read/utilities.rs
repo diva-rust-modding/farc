@@ -27,4 +27,3 @@ where
 }
 
 pub(crate) type Result<'a, O> = IResult<&'a [u8], O, ParserError<'a>>;
-
