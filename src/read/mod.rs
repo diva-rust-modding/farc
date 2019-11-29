@@ -1,5 +1,5 @@
 use nom::{
-    branch::alt, bytes::complete::*, combinator::*, error::context, multi::many1,
+    branch::alt, bytes::complete::*, combinator::*, error::context, multi::many1, sequence::pair,
     number::complete::*, *,
 };
 
@@ -10,34 +10,9 @@ use crate::entry::read::*;
 use std::borrow::Cow;
 
 pub mod error;
+pub(crate) mod utilities;
 
-pub(crate) fn string(i: &[u8]) -> Result<Cow<str>> {
-    is_not::<_, _, ParserError<'_>>("\x00")(i)
-        .map(|(i2, s)| (&i2[1..], String::from_utf8_lossy(s)))
-        .map_err(|_| Err::Error(ParserError(i, ParserErrorKind::StringOverflow)))
-}
-use nom::error::ParseError;
-pub(crate) fn be_usize<'a, E: ParseError<&'a [u8]>>(i: &'a [u8]) -> IResult<&'a [u8], usize, E> {
-    map(be_u32, |x| x as usize)(i)
-}
-use std::slice::SliceIndex;
-pub(crate) fn slice_input<S>(i: &[u8], s: S) -> core::result::Result<&[u8], Err<ParserError<'_>>>
-where
-    S: SliceIndex<[u8], Output = [u8]>,
-{
-    i.get(s)
-        .ok_or(Err::Failure(ParserError(i, ParserErrorKind::InvalidOffset)))
-}
-pub(crate) fn slice<'a, S, F, O, E>(f: F, s: S) -> impl FnOnce(&'a [u8]) -> Result<O>
-where
-    S: SliceIndex<[u8], Output = [u8]>,
-    F: Fn(&'a [u8]) -> IResult<&'a [u8], O, E>,
-    ParserError<'a>: From<E>,
-{
-    move |i: &'a [u8]| f(slice_input(i, s)?).map_err(|e| Err::convert(e))
-}
-
-pub(crate) type Result<'a, O> = IResult<&'a [u8], O, ParserError<'a>>;
+use self::utilities::*;
 
 impl<'a> GenericArchive<'a> {
     pub fn read(i0: &'a [u8]) -> Result<'a, Self> {
@@ -58,7 +33,6 @@ impl<'a, E: BasicEntry<'a>> BasicArchive<E> {
         //panic!("{} {} {}", bs, align, bs-0xC);
         let entry_read = |i: &'a [u8]| E::read(i0, i);
         let (_, entries) = slice(many1(entry_read), 0xC..0xC + bs - 4)(i0)?;
-        let entries = entries.into_iter().map(|e| e.into()).collect();
         Ok((i, BasicArchive { align, entries }))
     }
 }
@@ -78,7 +52,7 @@ impl<'a, E: ExtendEntry<'a>> ExtendArchive<E> {
         let (i, bs) = be_usize(i)?;
         let (i, _) = context(
             "Invalid FARC mode",
-            map_opt(be_u32, |m| if E::Mode == m { Some(true) } else { None }),
+            map_opt(be_u32, |m| if E::MODE == m { Some(true) } else { None }),
         )(i)?;
         //skip 4 bytes
         let i = &i[4..];
@@ -90,7 +64,6 @@ impl<'a, E: ExtendEntry<'a>> ExtendArchive<E> {
         //panic!("{} {} {}", bs, align, bs-0xC);
         let entry_read = |i: &'a [u8]| E::read(i0, i);
         let (_, entries) = slice(many1(entry_read), 0x1C..0x1C + bs - 20)(i0)?;
-        let entries = entries.into_iter().map(|e| e.into()).collect();
         Ok((i, ExtendArchive(BasicArchive { align, entries })))
     }
 }
@@ -110,7 +83,7 @@ impl<'a, E: ExtendEntry<'a>> FutureArchive<E> {
         let (i, bs) = be_usize(i)?;
         let (i, _) = context(
             "Invalid FARC mode",
-            map_opt(be_u32, |m| if E::Mode == m { Some(true) } else { None }),
+            map_opt(be_u32, |m| if E::MODE == m { Some(true) } else { None }),
         )(i)?;
         //skip 4 bytes
         let i = &i[4..];
@@ -122,12 +95,10 @@ impl<'a, E: ExtendEntry<'a>> FutureArchive<E> {
         //skip 8 bytes
         let i = &i[8..];
         let entry_read = |i: &'a [u8]| E::read(i0, i);
-        use nom::{combinator::map, sequence::pair};
         let (_, entries) = slice(
             many1(map(pair(entry_read, be_u32), |(e, _)| e)),
             0x1C..0x1C + bs - 20,
         )(i0)?;
-        let entries = entries.into_iter().map(|e| e.into()).collect();
         Ok((i, FutureArchive(BasicArchive { align, entries })))
     }
 }
@@ -135,10 +106,10 @@ impl<'a, E: ExtendEntry<'a>> FutureArchive<E> {
 impl<'a> FutureArchives<'a> {
     pub fn read(i0: &'a [u8]) -> Result<'a, Self> {
         alt((
-            map(FutureArchive::read, |a| FutureArchives::Base(a)),
-            map(FutureArchive::read, |a| FutureArchives::Compress(a)),
-            map(FutureArchive::read, |a| FutureArchives::Encrypt(a)),
-            map(FutureArchive::read, |a| FutureArchives::CompressEncrypt(a)),
+            map(FutureArchive::read, FutureArchives::Base),
+            map(FutureArchive::read, FutureArchives::Compress),
+            map(FutureArchive::read, FutureArchives::Encrypt),
+            map(FutureArchive::read, FutureArchives::CompressEncrypt),
         ))(i0)
     }
 }

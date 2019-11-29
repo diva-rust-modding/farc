@@ -1,7 +1,7 @@
-use nom::error::{ErrorKind, ParseError, VerboseError};
+use nom::error::{ErrorKind, ParseError};
 use thiserror::*;
 
-use super::*;
+
 
 #[derive(Error, Debug)]
 #[error("A parser error has occured: {1}")]
@@ -44,6 +44,6 @@ mod tests {
     fn convert() {
         let i: &[u8] = &[];
         let err = (i, ErrorKind::IsNot);
-        let err2: ParserError = err.into();
+        let _err2: ParserError = err.into();
     }
 }

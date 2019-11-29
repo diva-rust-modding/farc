@@ -1,8 +1,7 @@
-use nom::{bytes::complete::*, combinator::*, error::context, number::complete::*, *};
-use std::borrow::Cow;
+use nom::number::complete::*;
 
 use super::*;
-use crate::read::*;
+use crate::read::utilities::*;
 
 #[enum_dispatch]
 pub trait ReadEntry<'a>: Entry + Sized {
@@ -11,7 +10,7 @@ pub trait ReadEntry<'a>: Entry + Sized {
 
 pub trait BasicEntry<'a>: ReadEntry<'a> {}
 pub trait ExtendEntry<'a>: ReadEntry<'a> {
-    const Mode: u32;
+    const MODE: u32;
 }
 
 impl<'a> ReadEntry<'a> for MemoryEntry<'a> {
@@ -69,19 +68,19 @@ impl<'a> BasicEntry<'a> for CompressedEntry<'a> {}
 impl<'a> BasicEntry<'a> for Compressor<'a> {}
 
 impl<'a> ExtendEntry<'a> for MemoryEntry<'a> {
-    const Mode: u32 = 0;
+    const MODE: u32 = 0;
 }
 impl<'a> ExtendEntry<'a> for BaseEntry<'a> {
-    const Mode: u32 = 0;
+    const MODE: u32 = 0;
 }
 impl<'a> ExtendEntry<'a> for CompressedEntry<'a> {
-    const Mode: u32 = 2;
+    const MODE: u32 = 2;
 }
 impl<'a> ExtendEntry<'a> for Compressor<'a> {
-    const Mode: u32 = 2;
+    const MODE: u32 = 2;
 }
 impl<'a, E: ExtendEntry<'a> + Encrypt> ExtendEntry<'a> for Encryptor<E> {
-    const Mode: u32 = E::Mode | 4;
+    const MODE: u32 = E::MODE | 4;
 }
 
 #[cfg(test)]
