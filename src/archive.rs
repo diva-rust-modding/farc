@@ -1,11 +1,11 @@
 use crate::entry::compress::*;
 use crate::entry::*;
 
-pub enum  GenericArchive<'a> {
+pub enum GenericArchive<'a> {
     Base(BaseArchive<'a>),
     Compress(CompressArchive<'a>),
     Extended(ExtendedArchives<'a>),
-    Future(FutureArchives<'a>)
+    Future(FutureArchives<'a>),
 }
 
 pub type BaseArchive<'a> = BasicArchive<BaseEntry<'a>>;

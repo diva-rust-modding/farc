@@ -1,6 +1,6 @@
 use farc::*;
-use structopt::*;
 use std::path::*;
+use structopt::*;
 
 #[derive(StructOpt)]
 #[structopt(name = "farc", about = "manipulates SEGA File Archive file formats")]
@@ -40,8 +40,12 @@ fn main() {
             file.read_to_end(&mut input).unwrap();
 
             let (_, farc) = GenericArchive::read(&input).expect("Failed to parse archive");
-            let root_dir =  path.parent().unwrap();
-            let root_dir = if root { root_dir.to_owned() } else { root_dir.join(path.file_stem().unwrap()) };
+            let root_dir = path.parent().unwrap();
+            let root_dir = if root {
+                root_dir.to_owned()
+            } else {
+                root_dir.join(path.file_stem().unwrap())
+            };
             std::fs::create_dir(&root_dir);
             match farc {
                 GenericArchive::Base(a) => extract(&root_dir, &a.entries),
@@ -51,19 +55,19 @@ fn main() {
                     match a {
                         Base(a) => extract(&root_dir, &a.0.entries),
                         Compress(a) => extract(&root_dir, &a.0.entries),
-                        _ => unimplemented!("Extracting encrypted archives is not yet supported")
+                        _ => unimplemented!("Extracting encrypted archives is not yet supported"),
                     }
-                },
+                }
                 GenericArchive::Future(a) => {
                     use FutureArchives::*;
                     match a {
                         Base(a) => extract(&root_dir, &a.0.entries),
                         Compress(a) => extract(&root_dir, &a.0.entries),
-                        _ => unimplemented!("Extracting encrypted archives is not yet supported")
+                        _ => unimplemented!("Extracting encrypted archives is not yet supported"),
                     }
                 }
             };
-        },
+        }
         Opt::View { path } => {
             let path = Path::new(&path);
             let mut file = File::open(&path).expect("Failed to open file");
@@ -78,11 +82,14 @@ fn main() {
                 println!("#{} {}", i + 1, entry.name());
             }
         }
-        _ => ()
+        _ => (),
     };
 }
 
-fn extract<'a, E: EntryExtract<'a>>(root_dir: &Path, entries: &'a [E]) -> Result<(), Box<dyn std::error::Error>> {
+fn extract<'a, E: EntryExtract<'a>>(
+    root_dir: &Path,
+    entries: &'a [E],
+) -> Result<(), Box<dyn std::error::Error>> {
     for entry in entries {
         let mut file = File::create(root_dir.join(&entry.name()))?;
         io::copy(&mut entry.extractor(), &mut file)?;

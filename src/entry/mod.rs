@@ -72,7 +72,7 @@ impl<'a> EntryExtract<'a> for BaseEntry<'a> {
         match self {
             BaseEntry::Memory(e) => e.extractor(),
             //Other entries shouldn't be extracted
-            _ => &[]
+            _ => &[],
         }
     }
 }

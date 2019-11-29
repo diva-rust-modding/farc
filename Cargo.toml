@@ -10,6 +10,7 @@ edition = "2018"
 nom = "5.0.1"
 flate2 = "1.0.12"
 enum_dispatch = { version = "*", git="https://gitlab.com/waelwindows9922/enum_dispatch.git" }
+thiserror = "1.0.6"
 
 [badges]
 
