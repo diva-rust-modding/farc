@@ -1,6 +1,7 @@
 use farc::*;
 use std::path::*;
 use structopt::*;
+use anyhow::*;
 
 #[derive(StructOpt)]
 #[structopt(name = "farc", about = "manipulates SEGA File Archive file formats")]
@@ -29,22 +30,22 @@ enum Opt {
 use std::fs::File;
 use std::io::{self, Read};
 
-fn main() {
+fn main() -> Result<()> {
     let opts = Opt::from_args();
 
     match opts {
         Opt::Extract { path, root } => {
             let path = Path::new(&path);
-            let mut file = File::open(&path).expect("Failed to open file");
+            let mut file = File::open(&path).context("Failed to open file")?;
             let mut input = vec![];
-            file.read_to_end(&mut input).unwrap();
+            file.read_to_end(&mut input)?;
 
             let (_, farc) = GenericArchive::read(&input).expect("Failed to parse archive");
-            let root_dir = path.parent().unwrap();
+            let root_dir = path.parent().context("Path has no parent")?;
             let root_dir = if root {
                 root_dir.to_owned()
             } else {
-                root_dir.join(path.file_stem().unwrap())
+                root_dir.join(path.file_stem().context("No valid file stem found")?)
             };
             std::fs::create_dir(&root_dir);
             match farc {
@@ -66,13 +67,13 @@ fn main() {
                         _ => unimplemented!("Extracting encrypted archives is not yet supported"),
                     }
                 }
-            };
+            }?;
         }
         Opt::View { path } => {
             let path = Path::new(&path);
-            let mut file = File::open(&path).expect("Failed to open file");
+            let mut file = File::open(&path).context("Failed to open file")?;
             let mut input = vec![];
-            file.read_to_end(&mut input).unwrap();
+            file.read_to_end(&mut input)?;
 
             let farc = BaseArchive::read(&input)
                 .expect("Failed to parse archive")
@@ -84,15 +85,24 @@ fn main() {
         }
         _ => (),
     };
+    Ok(())
 }
 
-fn extract<'a, E: EntryExtract<'a>>(
+fn extract<'a, E>(
     root_dir: &Path,
     entries: &'a [E],
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()>
+where
+    E: EntryExtract<'a>,
+    E::Error: 'static + Send + Sync
+{
     for entry in entries {
-        let mut file = File::create(root_dir.join(&entry.name()))?;
-        io::copy(&mut entry.extractor(), &mut file)?;
+        let mut file = File::create(root_dir.join(&entry.name())).context("failed to create file")?;
+        let mut read = match entry.extractor()? {
+            Some(a) => a,
+            None => continue
+        };
+        io::copy(&mut read, &mut file)?;
     }
     Ok(())
 }
