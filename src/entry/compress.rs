@@ -35,20 +35,23 @@ impl<'a> Read for Decompressor<'a> {
 
 impl<'a> EntryExtract<'a> for CompressedEntry<'a> {
     type Extractor = GzDecoder<&'a [u8]>;
+    type Error = Infallible;
 
-    fn extractor(&'a self) -> Self::Extractor {
-        GzDecoder::new(&self.entry.data)
+    fn extractor(&'a self) -> EResult<Self::Extractor> {
+        Ok(Some(GzDecoder::new(&self.entry.data)))
     }
 }
 
 impl<'a> EntryExtract<'a> for Compressor<'a> {
     type Extractor = Decompressor<'a>;
+    type Error = Infallible;
 
-    fn extractor(&'a self) -> Self::Extractor {
-        match self {
-            Compressor::Compress(e) => Decompressor::Uncompressed(e.extractor()),
-            Compressor::Compressed(e) => Decompressor::Decompress(e.extractor()),
-        }
+    fn extractor(&'a self) -> EResult<Self::Extractor> {
+        //It's safe to unwrap these
+        Ok(match self {
+            Compressor::Compressed(e) => Some(Decompressor::Decompress(e.extractor()?.unwrap())),
+            _ => None,
+        })
     }
 }
 

@@ -39,10 +39,13 @@ pub trait Entry {
     fn name(&self) -> &str;
 }
 
+type EResult<T, E = Infallible> = Result<Option<T>, E>;
+
 pub trait EntryExtract<'a>: Entry {
     type Extractor: io::Read;
+    type Error: std::error::Error;
 
-    fn extractor(&'a self) -> Self::Extractor;
+    fn extractor(&'a self) -> EResult<Self::Extractor, Self::Error>;
 }
 
 impl<'a> Entry for MemoryEntry<'a> {
@@ -57,22 +60,24 @@ impl Entry for FileEntry {
     }
 }
 
+use std::convert::Infallible;
 impl<'a> EntryExtract<'a> for MemoryEntry<'a> {
     type Extractor = &'a [u8];
+    type Error = Infallible;
 
-    fn extractor(&self) -> &[u8] {
-        &self.data
+    fn extractor(&self) -> EResult<&[u8]> {
+        Ok(Some(&self.data))
     }
 }
 
 impl<'a> EntryExtract<'a> for BaseEntry<'a> {
     type Extractor = &'a [u8];
+    type Error = Infallible;
 
-    fn extractor(&self) -> &[u8] {
+    fn extractor(&self) -> EResult<&[u8]> {
         match self {
             BaseEntry::Memory(e) => e.extractor(),
-            //Other entries shouldn't be extracted
-            _ => &[],
+            _ => Ok(None),
         }
     }
 }

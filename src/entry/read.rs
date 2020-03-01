@@ -55,10 +55,14 @@ impl<'a> ReadEntry<'a> for Compressor<'a> {
     }
 }
 
-impl<'a, E: ReadEntry<'a> + Encrypt> ReadEntry<'a> for Encryptor<E> {
+impl<'a, E> ReadEntry<'a> for Encryptor<E>
+where
+    E: Encrypt,
+    E::Decrypt: ReadEntry<'a>,
+{
     fn read(i0: &'a [u8], i: &'a [u8]) -> Result<'a, Self> {
-        let (i, entry) = E::read(i0, &i)?;
-        Ok((i, entry.encrypt()))
+        let (i, entry) = E::Decrypt::read(i0, &i)?;
+        Ok((i, Encryptor::Encrypted(entry)))
     }
 }
 
@@ -79,7 +83,11 @@ impl<'a> ExtendEntry<'a> for CompressedEntry<'a> {
 impl<'a> ExtendEntry<'a> for Compressor<'a> {
     const MODE: u32 = 2;
 }
-impl<'a, E: ExtendEntry<'a> + Encrypt> ExtendEntry<'a> for Encryptor<E> {
+impl<'a, E> ExtendEntry<'a> for Encryptor<E>
+where
+    E: ExtendEntry<'a> + Encrypt,
+    E::Decrypt: ReadEntry<'a>,
+{
     const MODE: u32 = E::MODE | 4;
 }
 

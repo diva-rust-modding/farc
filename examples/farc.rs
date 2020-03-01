@@ -1,7 +1,7 @@
+use anyhow::*;
 use farc::*;
 use std::path::*;
 use structopt::*;
-use anyhow::*;
 
 #[derive(StructOpt)]
 #[structopt(name = "farc", about = "manipulates SEGA File Archive file formats")]
@@ -33,6 +33,7 @@ use std::io::{self, Read};
 fn main() -> Result<()> {
     let opts = Opt::from_args();
 
+    use GenericArchive::*;
     match opts {
         Opt::Extract { path, root } => {
             let path = Path::new(&path);
@@ -49,17 +50,18 @@ fn main() -> Result<()> {
             };
             std::fs::create_dir(&root_dir);
             match farc {
-                GenericArchive::Base(a) => extract(&root_dir, &a.entries),
-                GenericArchive::Compress(a) => extract(&root_dir, &a.entries),
-                GenericArchive::Extended(a) => {
+                Base(a) => extract(&root_dir, &a.entries),
+                Compress(a) => extract(&root_dir, &a.entries),
+                Extended(a) => {
                     use ExtendedArchives::*;
                     match a {
                         Base(a) => extract(&root_dir, &a.0.entries),
                         Compress(a) => extract(&root_dir, &a.0.entries),
-                        _ => unimplemented!("Extracting encrypted archives is not yet supported"),
+                        Encrypt(a) => extract(&root_dir, &a.0.entries),
+                        CompressEncrypt(a) => extract(&root_dir, &a.0.entries),
                     }
                 }
-                GenericArchive::Future(a) => {
+                Future(a) => {
                     use FutureArchives::*;
                     match a {
                         Base(a) => extract(&root_dir, &a.0.entries),
@@ -75,12 +77,23 @@ fn main() -> Result<()> {
             let mut input = vec![];
             file.read_to_end(&mut input)?;
 
-            let farc = BaseArchive::read(&input)
-                .expect("Failed to parse archive")
-                .1;
-            println!("FArc archive with {} entries", farc.entries.len());
-            for (i, entry) in farc.entries.iter().enumerate() {
-                println!("#{} {}", i + 1, entry.name());
+            let farc = GenericArchive::read(&input).unwrap().1;
+            println!("{} archive with {} entries", farc.magic(), farc.len());
+            match farc {
+                Base(a) => view(&a.entries),
+                Compress(a) => view(&a.entries),
+                Extended(a) => match a {
+                    ExtendedArchives::Base(a) => view(&a.0.entries),
+                    ExtendedArchives::Compress(a) => view(&a.0.entries),
+                    ExtendedArchives::Encrypt(a) => view(&a.0.entries),
+                    ExtendedArchives::CompressEncrypt(a) => view(&a.0.entries),
+                },
+                Future(a) => match a {
+                    FutureArchives::Base(a) => view(&a.0.entries),
+                    FutureArchives::Compress(a) => view(&a.0.entries),
+                    FutureArchives::Encrypt(a) => view(&a.0.entries),
+                    FutureArchives::CompressEncrypt(a) => view(&a.0.entries),
+                },
             }
         }
         _ => (),
@@ -88,21 +101,27 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn extract<'a, E>(
-    root_dir: &Path,
-    entries: &'a [E],
-) -> Result<()>
+fn extract<'a, E>(root_dir: &Path, entries: &'a [E]) -> Result<()>
 where
     E: EntryExtract<'a>,
-    E::Error: 'static + Send + Sync
+    E::Error: 'static + Send + Sync,
 {
     for entry in entries {
-        let mut file = File::create(root_dir.join(&entry.name())).context("failed to create file")?;
+        let mut file =
+            File::create(root_dir.join(&entry.name())).context("failed to create file")?;
         let mut read = match entry.extractor()? {
             Some(a) => a,
-            None => continue
+            None => {
+                println!("skip");
+                continue;
+            }
         };
         io::copy(&mut read, &mut file)?;
     }
     Ok(())
+}
+fn view<'a, E: Entry>(entries: &'a [E]) {
+    for (i, entry) in entries.iter().enumerate() {
+        println!("#{} {}", i + 1, entry.name());
+    }
 }
