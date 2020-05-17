@@ -37,12 +37,10 @@ impl<'a> Encrypt for Compressor<'a> {
 }
 
 const KEY: &[u8] = b"project_diva.bin";
-use aesstream::*;
-use crypto::aes::*;
-use crypto::aessafe::*;
-use crypto::blockmodes::*;
+use aes_frast::*;
+use std::io::Cursor;
 impl<'a> EntryExtract<'a> for Encryptor<BaseEntry<'a>> {
-    type Extractor = EcbReader<AesSafe128Decryptor, NoPadding, &'a [u8]>;
+    type Extractor = Cursor<Vec<u8>>;
     type Error = std::io::Error;
 
     fn extractor(&'a self) -> EResult<Self::Extractor, Self::Error> {
@@ -55,9 +53,11 @@ impl<'a> EntryExtract<'a> for Encryptor<BaseEntry<'a>> {
                     None => return Ok(None),
                 };
                 println!("extracting");
-                let decryptor =
-                    EcbReader::new_ecb(extractor, AesSafe128Decryptor::new(KEY), NoPadding);
-                Ok(Some(decryptor))
+                let mut keys = vec![0; 44];
+                aes_core::setkey_dec_auto(&KEY, &mut keys);
+                let mut plain = vec![0; extractor.len()];
+                aes_with_operation_mode::ecb_dec(extractor, &mut plain, &keys);
+                Ok(Some(Cursor::new(plain)))
             }
             _ => Ok(None),
         }
@@ -66,7 +66,7 @@ impl<'a> EntryExtract<'a> for Encryptor<BaseEntry<'a>> {
 
 use flate2::read::GzDecoder;
 impl<'a> EntryExtract<'a> for Encryptor<Compressor<'a>> {
-    type Extractor = EcbReader<AesSafe128Decryptor, NoPadding, &'a [u8]>;
+    type Extractor = GzDecoder<Cursor<Vec<u8>>>;
     type Error = std::io::Error;
 
     fn extractor(&'a self) -> EResult<Self::Extractor, Self::Error> {
@@ -74,11 +74,14 @@ impl<'a> EntryExtract<'a> for Encryptor<Compressor<'a>> {
             //get rid of this unwrap
             Self::Encrypted(e) => {
                 println!("{:X?} len={:#X?}", &e.entry.data[..4], e.entry.data.len());
-                let decrypt =
-                    EcbReader::new_ecb(&e.entry.data[..], AesSafe128Decryptor::new(KEY), NoPadding);
-                //let decomp = GzDecoder::new(decrypt);
+                let mut keys = vec![0; 44];
+                aes_core::setkey_dec_auto(&KEY, &mut keys);
+                let extractor = &e.entry.data[..];
+                let mut plain = vec![0; extractor.len()];
+                aes_with_operation_mode::ecb_dec(extractor, &mut plain, &keys);
+                let decomp = GzDecoder::new(Cursor::new(plain));
                 println!("resturn");
-                Ok(Some(decrypt))
+                Ok(Some(decomp))
             }
             _ => Ok(None),
         }
