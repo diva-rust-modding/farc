@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 nom = "5.0.1"
 flate2 = "1.0.12"
-enum_dispatch = { version = "*", git="https://gitlab.com/waelwindows9922/enum_dispatch.git" }
+enum_dispatch = "0.3.9"
 thiserror = "1.0.6"
 
 [badges]
